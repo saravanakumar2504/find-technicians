@@ -1,0 +1,372 @@
+:root {
+  --max-width: 1600px;
+  --font-mono: ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Segoe UI Mono',
+    'Roboto Mono', 'Oxygen Mono', 'Ubuntu Monospace', 'Source Code Pro',
+    'Fira Mono', 'Droid Sans Mono', 'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0f2fe 50%, #fdf4ff 100%);
+  background-attachment: fixed;
+  color: #0f172a;
+}
+
+.page-content {
+  max-width: var(--max-width);
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.25rem 2rem;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+main {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+  flex-shrink: 0;
+}
+
+header h1 {
+  color: #2563eb;
+  margin-bottom: 0.5rem;
+}
+
+.technician-container {
+  background-color: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.technician-container h2 {
+  flex-shrink: 0;
+}
+
+.filter-section {
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-label {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.specialty-filter {
+  position: relative;
+}
+
+.specialty-filter-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  font-size: 0.95rem;
+  cursor: pointer;
+  min-width: 180px;
+  justify-content: space-between;
+}
+
+.specialty-filter-trigger:hover {
+  border-color: #93c5fd;
+}
+
+.specialty-filter-trigger .chevron {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.specialty-filter-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 10;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  padding: 0.5rem;
+  min-width: 220px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.specialty-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.specialty-filter-option:hover {
+  background-color: #eff6ff;
+}
+
+.technicians-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.technicians-table th,
+.technicians-table td {
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.technicians-table th {
+  color: #1e293b;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+}
+
+.status.available {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.status.busy {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.toggle-btn {
+  padding: 0.45rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.toggle-btn--busy {
+  background-color: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.toggle-btn--busy:hover {
+  background-color: #fee2e2;
+}
+
+.toggle-btn--available {
+  background-color: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.toggle-btn--available:hover {
+  background-color: #dcfce7;
+}
+
+.edit-btn {
+  padding: 0.45rem 0.85rem;
+  border-radius: 6px;
+  background-color: #2563eb;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+.edit-btn:hover {
+  background-color: #1d4ed8;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  margin: 1.25rem 2rem 1.5rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+
+.navbar-brand {
+  font-weight: 700;
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 1.1rem;
+  white-space: nowrap;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.navbar-links a {
+  color: #1e293b;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.navbar-links a:hover {
+  color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.technician-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 400px;
+}
+
+.technician-form label {
+  margin-top: 0.75rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.technician-form input {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  font-size: 1rem;
+}
+
+.technician-form button {
+  margin-top: 1.5rem;
+  padding: 0.6rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.technician-form button:hover {
+  background-color: #1d4ed8;
+}
+
+.technician-form input,
+.technician-form button {
+  width: 100%;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .page-content {
+    padding: 0.75rem;
+  }
+
+  main {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-links {
+    gap: 0.25rem;
+  }
+
+  .navbar-links a {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .technicians-table {
+    min-width: 640px;
+  }
+
+  .technician-form {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  .action-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toggle-btn,
+  .edit-btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
