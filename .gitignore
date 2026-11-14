@@ -3,8 +3,16 @@ node_modules
 out/
 build
 dist
+docs
 *.local
 .vscode/*
 !.vscode/extensions.json
 .DS_Store
 .vercel
+
+# Environment variables with secrets
+.env
+.env.local
+
+# MCP config contains team-specific secrets — never commit
+.mcp.json

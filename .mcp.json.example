@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "bundle-analysis": {
+      "command": "node",
+      "args": [
+        "/path/to/mcp/dist/server.js"
+      ]
+    }
+  }
+}
