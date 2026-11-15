@@ -9,27 +9,29 @@ import BuildsList from "./BuildsList";
 function BuildsListRenderer({ result }: { result: any }) {
   try {
     const content = result?.content?.[0];
-    if (content?.type === 'text' && content.text) {
+    if (content?.type === "text" && content.text) {
       const builds = JSON.parse(content.text);
       if (Array.isArray(builds)) {
         return <BuildsList builds={builds} />;
       }
     }
   } catch (error) {
-    console.error('Error parsing builds:', error);
+    console.error("Error parsing builds:", error);
   }
 
   return (
-    <pre style={{
-      background: "white",
-      padding: "0.75rem",
-      borderRadius: "4px",
-      overflow: "auto",
-      fontSize: "0.9rem",
-      border: "1px solid #ddd",
-      marginTop: "0.5rem",
-      maxHeight: "400px"
-    }}>
+    <pre
+      style={{
+        background: "white",
+        padding: "0.75rem",
+        borderRadius: "4px",
+        overflow: "auto",
+        fontSize: "0.9rem",
+        border: "1px solid #ddd",
+        marginTop: "0.5rem",
+        maxHeight: "400px",
+      }}
+    >
       {JSON.stringify(result, null, 2)}
     </pre>
   );
@@ -38,13 +40,14 @@ function BuildsListRenderer({ result }: { result: any }) {
 /**
  * Test page for MCP + Ollama (Llama 3.1) integration
  */
-export default function TestMCPPage() { '
+export default function TestMCPPage() {
   const [query, setQuery] = useState("");
-  const [repository, setRepository] = useState("find-technicians");
-  const [branch, setBranch] = useState("main");
   const [response, setResponse] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const repository = "find-technicians";
+  const branch = "main";
 
   const handleQuery = async () => {
     if (!query.trim()) return;
@@ -76,13 +79,35 @@ export default function TestMCPPage() { '
     }
   };
 
+  const exampleQueries = [
+    "Show me all builds for find-technicians",
+    "List the latest builds",
+    "Get build status for the main branch",
+    "Show me recent commits",
+  ];
+
   return (
-    <div style={{ padding: "2rem", maxWidth: "1000px", margin: "0 auto", fontFamily: "system-ui" }}>
-      <h1>🔌 MCP + Ollama Tool Orchestration</h1>
-      <p>Ask a question and Llama 3.1 (local, free) will pick the right tool to answer it</p>
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        padding: "1.5rem",
+        fontFamily: "system-ui",
+        overflow: "hidden",
+        background: "#f8fafc",
+      }}
+    >
+      {/* Header */}
+      <div style={{ flexShrink: 0, marginBottom: "1.5rem" }}>
+        
+        <p style={{ margin: 0, fontSize: "0.95rem", color: "#64748b" }}>
+          Ask questions about your builds using natural language. Powered by MCP + Ollama (Llama 3.1)
+        </p>
+      </div>
 
       {/* Query Input */}
-      <div style={{ marginTop: "2rem" }}>
+      <div style={{ flexShrink: 0 }}>
         <textarea
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -104,7 +129,7 @@ export default function TestMCPPage() { '
           }}
         />
 
-        <div style={{ marginTop: "1rem" }}>
+        <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           <button
             onClick={handleQuery}
             disabled={loading || !query.trim()}
@@ -119,13 +144,50 @@ export default function TestMCPPage() { '
               fontWeight: "600",
             }}
           >
-            {loading ? "⏳ Processing..." : "🚀 Ask Llama"}
+            {loading ? "⏳ Processing..." : "🚀 Ask"}
           </button>
 
-          <span style={{ marginLeft: "1rem", fontSize: "0.9rem", color: "#666" }}>
+          <span style={{ fontSize: "0.875rem", color: "#64748b" }}>
             Press Cmd+Enter to submit
           </span>
         </div>
+
+        {/* Example Queries */}
+        {!response && (
+          <div style={{ marginTop: "1rem", padding: "1rem", background: "white", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+            <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#475569", marginBottom: "0.75rem" }}>
+              💡 Try these examples:
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+              {exampleQueries.map((example) => (
+                <button
+                  key={example}
+                  onClick={() => setQuery(example)}
+                  style={{
+                    padding: "0.5rem 0.75rem",
+                    background: "#f1f5f9",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "0.875rem",
+                    color: "#334155",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#e2e8f0";
+                    e.currentTarget.style.borderColor = "#94a3b8";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#f1f5f9";
+                    e.currentTarget.style.borderColor = "#cbd5e1";
+                  }}
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Error Display */}
@@ -144,22 +206,45 @@ export default function TestMCPPage() { '
         </div>
       )}
 
-      {/* Response Display */}
+      {/* Response Display - Scrollable */}
       {response && (
-        <div style={{ marginTop: "2rem" }}>
+        <div
+          style={{
+            marginTop: "1rem",
+            flex: 1,
+            overflow: "auto",
+            minHeight: 0,
+          }}
+        >
           {response.toolCalled ? (
             <>
-              {response.toolCalled.name === 'list_builds' ? (
+              {response.toolCalled.name === "list_builds" ? (
                 /* Special handling for list_builds - show table directly */
-                <div style={{ background: "#f0f9ff", padding: "1.5rem", borderRadius: "8px", border: "1px solid #0ea5e9" }}>
+                <div
+                  style={{
+                    background: "#f0f9ff",
+                    padding: "1.5rem",
+                    borderRadius: "8px",
+                    border: "1px solid #0ea5e9",
+                    height: "100%",
+                  }}
+                >
                   <h3 style={{ margin: "0 0 1rem 0", color: "#0369a1" }}>
-                    📊 Builds for {response.toolCalled.arguments?.project || 'Project'}
+                    📊 Builds for{" "}
+                    {response.toolCalled.arguments?.project || "Project"}
                   </h3>
                   <BuildsListRenderer result={response.toolCalled.result} />
                 </div>
               ) : (
                 /* Default tool display with arguments and result */
-                <div style={{ background: "#f0f9ff", padding: "1.5rem", borderRadius: "8px", border: "1px solid #0ea5e9" }}>
+                <div
+                  style={{
+                    background: "#f0f9ff",
+                    padding: "1.5rem",
+                    borderRadius: "8px",
+                    border: "1px solid #0ea5e9",
+                  }}
+                >
                   <h3 style={{ margin: "0 0 1rem 0", color: "#0369a1" }}>
                     🔧 Tool Executed: <code>{response.toolCalled.name}</code>
                   </h3>
@@ -167,15 +252,17 @@ export default function TestMCPPage() { '
                   {/* Arguments */}
                   <div style={{ marginBottom: "1rem" }}>
                     <strong>📥 Arguments:</strong>
-                    <pre style={{
-                      background: "white",
-                      padding: "0.75rem",
-                      borderRadius: "4px",
-                      overflow: "auto",
-                      fontSize: "0.9rem",
-                      border: "1px solid #ddd",
-                      marginTop: "0.5rem"
-                    }}>
+                    <pre
+                      style={{
+                        background: "white",
+                        padding: "0.75rem",
+                        borderRadius: "4px",
+                        overflow: "auto",
+                        fontSize: "0.9rem",
+                        border: "1px solid #ddd",
+                        marginTop: "0.5rem",
+                      }}
+                    >
                       {JSON.stringify(response.toolCalled.arguments, null, 2)}
                     </pre>
                   </div>
@@ -183,16 +270,18 @@ export default function TestMCPPage() { '
                   {/* Result */}
                   <div>
                     <strong>📤 Result:</strong>
-                    <pre style={{
-                      background: "white",
-                      padding: "0.75rem",
-                      borderRadius: "4px",
-                      overflow: "auto",
-                      fontSize: "0.9rem",
-                      border: "1px solid #ddd",
-                      marginTop: "0.5rem",
-                      maxHeight: "400px"
-                    }}>
+                    <pre
+                      style={{
+                        background: "white",
+                        padding: "0.75rem",
+                        borderRadius: "4px",
+                        overflow: "auto",
+                        fontSize: "0.9rem",
+                        border: "1px solid #ddd",
+                        marginTop: "0.5rem",
+                        maxHeight: "400px",
+                      }}
+                    >
                       {JSON.stringify(response.toolCalled.result, null, 2)}
                     </pre>
                   </div>
@@ -202,57 +291,21 @@ export default function TestMCPPage() { '
           ) : (
             <>
               {/* No tool called - just text response */}
-              <div style={{ background: "#fef3c7", padding: "1.5rem", borderRadius: "8px", border: "1px solid #fbbf24" }}>
+              <div
+                style={{
+                  background: "#fef3c7",
+                  padding: "1.5rem",
+                  borderRadius: "8px",
+                  border: "1px solid #fbbf24",
+                }}
+              >
                 <h3 style={{ margin: "0 0 1rem 0" }}>💬 Response:</h3>
                 <p style={{ margin: 0 }}>{response.answer}</p>
               </div>
             </>
           )}
-
-          {/* Available Tools */}
-          <details style={{ marginTop: "1rem" }}>
-            <summary style={{ cursor: "pointer", fontWeight: "600", padding: "0.5rem" }}>
-              📋 Available Tools ({response.availableTools?.length || 0})
-            </summary>
-            <ul style={{ marginTop: "0.5rem", paddingLeft: "2rem" }}>
-              {response.availableTools?.map((tool: string) => (
-                <li key={tool}>
-                  <code>{tool}</code>
-                </li>
-              ))}
-            </ul>
-          </details>
         </div>
       )}
-
-      {/* Example Queries */}
-      <div style={{ marginTop: "3rem", padding: "1.5rem", background: "#f9fafb", borderRadius: "8px" }}>
-        <h3 style={{ margin: "0 0 1rem 0" }}>💡 Example Queries:</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          {[
-            `Show me all builds for ${repository}`,
-            `List builds for ${repository} on branch ${branch}`,
-            `What builds are available for ${repository}?`,
-            `Get the latest builds from ${repository}`,
-          ].map((example) => (
-            <button
-              key={example}
-              onClick={() => setQuery(example)}
-              style={{
-                padding: "0.5rem 1rem",
-                background: "white",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                cursor: "pointer",
-                textAlign: "left",
-                fontSize: "0.9rem",
-              }}
-            >
-              "{example}"
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

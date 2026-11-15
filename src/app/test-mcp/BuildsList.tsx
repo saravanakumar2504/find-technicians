@@ -43,14 +43,17 @@ export default function BuildsList({ builds }: BuildsListProps) {
   };
 
   return (
-    <div style={{ marginTop: '1rem', overflowX: 'auto' }}>
+    <div style={{
+      marginTop: '1rem',
+      overflowY: 'auto',
+      maxHeight: 'calc(100vh - 300px)',
+      border: '1px solid #e5e7eb',
+      borderRadius: '8px'
+    }}>
       <table style={{
         width: '100%',
         borderCollapse: 'collapse',
         background: 'white',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
       }}>
         <thead>
           <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>

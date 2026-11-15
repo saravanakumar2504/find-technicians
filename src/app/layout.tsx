@@ -1,24 +1,27 @@
+'use client';
+
 import type { Metadata } from 'next';
 import './globals.css';
 import StoreProvider from './StoreProvider';
 import { Navbar } from '@/components/Navbar';
-
-export const metadata: Metadata = {
-  title: 'Find Technicians',
-  description: 'Next.js + Redux Toolkit application to find technicians',
-};
+import { usePathname } from 'next/navigation';
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const hideNavbar = pathname === '/test-mcp';
+
   return (
     <html lang="en">
       <body>
         <StoreProvider>
-          <Navbar />
-          <div className="page-content">{children}</div>
+          {!hideNavbar && <Navbar />}
+          <div className="page-content" style={hideNavbar ? { padding: 0 } : undefined}>
+            {children}
+          </div>
         </StoreProvider>
       </body>
     </html>
