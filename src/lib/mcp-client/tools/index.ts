@@ -4,6 +4,8 @@
  */
 
 export { listBuilds } from "./list-builds";
+export { listAvailableTools } from "./list-tools";
+export { executeTool } from "./execute-tool";
 
 // Future tools will be exported here:
 // export { getBundleSummary } from "./get-bundle-summary";
