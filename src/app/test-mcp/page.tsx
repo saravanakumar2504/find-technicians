@@ -38,7 +38,7 @@ function BuildsListRenderer({ result }: { result: any }) {
 /**
  * Test page for MCP + Ollama (Llama 3.1) integration
  */
-export default function TestMCPPage() { 
+export default function TestMCPPage() { '
   const [query, setQuery] = useState("");
   const [repository, setRepository] = useState("find-technicians");
   const [branch, setBranch] = useState("main");
