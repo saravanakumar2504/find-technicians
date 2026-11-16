@@ -5,16 +5,26 @@ export function loadMcpConfig() {
   const configPath = path.join(process.cwd(), ".mcp.json");
 
   if (!fs.existsSync(configPath)) {
-    throw new Error(
-      ".mcp.json not found. Create it from .mcp.json.example with your server path.",
-    );
+    // Return dummy config for build-time (CI/CD)
+    console.warn("⚠️  .mcp.json not found, using dummy config for build");
+    return {
+      command: "node",
+      args: [],
+      env: {},
+    };
   }
   const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
   const serverConfig = config.mcpServers?.["bundle-analysis"];
 
   if (!serverConfig) {
-    throw new Error("bundle-analysis server not configured in .mcp.json");
+    // Return dummy config if server not configured
+    console.warn("⚠️  bundle-analysis server not configured, using dummy config");
+    return {
+      command: "node",
+      args: [],
+      env: {},
+    };
   }
 
   return serverConfig;
