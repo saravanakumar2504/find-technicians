@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { mcpClient, tools, MCPLogMessage } from "@/lib/mcp-client";
 
+// Mark as dynamic since we use request.url
+export const dynamic = 'force-dynamic';
+
 /**
  * API Route: GET /api/builds
  * Fetches build information using MCP server

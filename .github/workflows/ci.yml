@@ -19,5 +19,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Build with bundle analysis
+        run: ANALYZE=true npm run build > build-output.txt 2>&1
+        env:
+          NEXT_PUBLIC_ANALYZE: true
+
+      - name: Extract route sizes from build output
+        run: node scripts/extract-bundle-stats.js
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+
+      - name: Upload bundle report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-report-${{ github.sha }}
+          path: |
+            bundle-stats.json
+            .next/analyze/
+          retention-days: 7

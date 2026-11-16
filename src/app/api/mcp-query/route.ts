@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { mcpClient, tools, type MCPLogMessage } from "@/lib/mcp-client";
 import ollama from "ollama";
 
+// Mark as dynamic since this is a POST API route
+export const dynamic = 'force-dynamic';
+
 /**
  * Configuration for tool parameter defaults
  * Add entries here to provide default values for any tool's parameters

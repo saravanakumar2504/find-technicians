@@ -9,6 +9,8 @@ docs
 !.vscode/extensions.json
 .DS_Store
 .vercel
+bundle-stats.json
+build-output.txt
 
 # Environment variables with secrets
 .env
