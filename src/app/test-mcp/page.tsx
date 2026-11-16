@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import BuildsList from "./BuildsList";
+import BundleSummary from "./BundleSummary";
 
 /**
  * Helper component to render the list_builds result
@@ -82,8 +83,8 @@ export default function TestMCPPage() {
   const exampleQueries = [
     "Show me all builds for find-technicians",
     "List the latest builds",
-    "Get build status for the main branch",
-    "Show me recent commits",
+    "Get bundle summary for commit 46d07bf in find-technicians",
+    "Show bundle analysis for latest build",
   ];
 
   return (
@@ -234,6 +235,72 @@ export default function TestMCPPage() {
                     {response.toolCalled.arguments?.project || "Project"}
                   </h3>
                   <BuildsListRenderer result={response.toolCalled.result} />
+                </div>
+              ) : response.toolCalled.name === "get_bundle_summary" ? (
+                /* Special handling for get_bundle_summary - show formatted summary */
+                <div
+                  style={{
+                    background: "#faf5ff",
+                    padding: "1.5rem",
+                    borderRadius: "8px",
+                    border: "1px solid #a855f7",
+                    height: "100%",
+                    overflow: "auto",
+                  }}
+                >
+                  {(() => {
+                    try {
+                      const content = response.toolCalled.result?.content?.[0];
+
+                      if (content?.type === "text" && content.text) {
+                        const summary = JSON.parse(content.text);
+                        const buildInfo = summary.buildInfo || {};
+
+                        return (
+                          <>
+                            {/* Header with Build Info inline */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem", gap: "1rem" }}>
+                              <h3 style={{ margin: 0, color: "#7e22ce", flexShrink: 0 }}>
+                                📦 Bundle Analysis for{" "}
+                                {response.toolCalled.arguments?.project || "Project"}
+                              </h3>
+
+                              {buildInfo.commitSha && (
+                                <div style={{ display: "flex", gap: "1rem", fontSize: "0.75rem", color: "#64748b", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                                  <span>
+                                    <strong>Commit:</strong>{" "}
+                                    <code style={{ background: "#e9d5ff", padding: "0.125rem 0.4rem", borderRadius: "3px", color: "#6b21a8", fontSize: "0.7rem" }}>
+                                      {buildInfo.commitSha.substring(0, 7)}
+                                    </code>
+                                  </span>
+                                  <span><strong>Branch:</strong> {buildInfo.branch || "N/A"}</span>
+                                  <span><strong>Time:</strong> {buildInfo.timestamp ? new Date(buildInfo.timestamp).toLocaleString() : "N/A"}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <BundleSummary summary={summary} showBuildInfo={false} />
+                          </>
+                        );
+                      }
+                    } catch (error) {
+                      console.error("Error parsing bundle summary:", error);
+                    }
+                    return (
+                      <pre
+                        style={{
+                          background: "white",
+                          padding: "0.75rem",
+                          borderRadius: "4px",
+                          overflow: "auto",
+                          fontSize: "0.9rem",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        {JSON.stringify(response.toolCalled.result, null, 2)}
+                      </pre>
+                    );
+                  })()}
                 </div>
               ) : (
                 /* Default tool display with arguments and result */
