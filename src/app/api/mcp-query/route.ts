@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { mcpClient, tools, type MCPLogMessage } from "@/lib/mcp-client";
+import { toolResponseCache } from "@/lib/cache/tool-response-cache";
 import ollama from "ollama";
 
 // Mark as dynamic since this is a POST API route
@@ -133,13 +134,26 @@ export async function POST(request: Request) {
 
     console.log(`📦 Arguments (final):`, toolArgs);
 
-    const toolResult = await tools.executeTool(
-      mcpClient,
-      toolCall.function.name,
-      toolArgs
-    );
+    // Step 5: Check cache before calling MCP
+    let toolResult = toolResponseCache.get(toolCall.function.name, toolArgs);
+    let cacheHit = false;
 
-    console.log("✅ Tool executed successfully");
+    if (toolResult) {
+      cacheHit = true;
+      console.log(`✅ Result retrieved from cache (no MCP call needed)`);
+    } else {
+      // Cache miss - call MCP tool
+      toolResult = await tools.executeTool(
+        mcpClient,
+        toolCall.function.name,
+        toolArgs
+      );
+
+      console.log("✅ Tool executed successfully");
+
+      // Store result in cache (if tool is cacheable)
+      toolResponseCache.set(toolCall.function.name, toolArgs, toolResult);
+    }
 
     // Step 6: Return the result
     return NextResponse.json({
@@ -150,6 +164,7 @@ export async function POST(request: Request) {
           name: toolCall.function.name,
           arguments: toolCall.function.arguments,
           result: toolResult,
+          fromCache: cacheHit,
         },
         availableTools: availableTools.map(t => t.name),
         mcpLogs: mcpLogs, // Include MCP logs in response
