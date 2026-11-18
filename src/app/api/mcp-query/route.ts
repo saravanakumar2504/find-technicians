@@ -1,25 +1,10 @@
 import { NextResponse } from "next/server";
 import { mcpClient, tools, type MCPLogMessage } from "@/lib/mcp-client";
 import { toolResponseCache } from "@/lib/cache/tool-response-cache";
-import ollama from "ollama";
+import { convertToolsToOllama, callOllama, hasToolCall, getFirstToolCall } from "./ollama";
 
 // Mark as dynamic since this is a POST API route
 export const dynamic = 'force-dynamic';
-
-/**
- * Configuration for tool parameter defaults
- * Add entries here to provide default values for any tool's parameters
- */
-const TOOL_PARAMETER_DEFAULTS: Record<string, Record<string, any>> = {
-  list_builds: {
-    project: "find-technicians"
-  },
-  // Add more tools and their default parameters here as needed
-  // example_tool: {
-  //   param1: "default_value",
-  //   param2: 123
-  // }
-};
 
 /**
  * API Route: POST /api/mcp-query
@@ -56,41 +41,14 @@ export async function POST(request: Request) {
     console.log("📋 Available tools:", availableTools.map(t => t.name));
 
     // Step 2: Convert MCP tools to Ollama function format
-    const ollamaTools = availableTools.map((tool) => {
-      const schema = tool.inputSchema as any;
-
-      return {
-        type: "function" as const,
-        function: {
-          name: tool.name,
-          description: tool.description || "",
-          parameters: {
-            type: "object",
-            properties: schema.properties || {},
-            required: schema.required || [],
-          },
-        },
-      };
-    });
-
-    console.log("🛠 Ollama tools schema:", ollamaTools.map(t => t.function.name));
+    const ollamaTools = convertToolsToOllama(availableTools);
 
     // Step 3: Call Ollama with function calling
-    const response = await ollama.chat({
-      model: "qwen2.5:3b", // Free local model with function calling (switch to llama3.1:8b once downloaded)
-      messages: [
-        {
-          role: "user",
-          content: query,
-        },
-      ],
-      tools: ollamaTools,
-    });
-
+    const response = await callOllama(query, ollamaTools);
     console.log("🤖 Ollama response:", response);
 
     // Step 4: Check if Ollama wants to call a function
-    if (!response.message.tool_calls || response.message.tool_calls.length === 0) {
+    if (!hasToolCall(response)) {
       console.log("ℹ️ No function call detected in Ollama response");
       // No function call - just return the text response
       return NextResponse.json({
@@ -105,34 +63,11 @@ export async function POST(request: Request) {
     }
 
     // Step 5: Execute the first tool Ollama selected
-    const toolCall = response.message.tool_calls[0];
+    const toolCall = getFirstToolCall(response)!;
     console.log(`🔧 Ollama selected tool: ${toolCall.function.name}`);
-    console.log(`📦 Arguments (raw):`, toolCall.function.arguments);
+    console.log(`📦 Arguments:`, toolCall.function.arguments);
 
-    // Prepare arguments with defaults for missing required parameters
-    let toolArgs = toolCall.function.arguments as Record<string, unknown>;
-
-    // Generic default value injection - uses both schema defaults and configured defaults
-    const selectedTool = availableTools.find(t => t.name === toolCall.function.name);
-    if (selectedTool) {
-      const schema = selectedTool.inputSchema as any;
-      const properties = schema.properties || {};
-      const configuredDefaults = TOOL_PARAMETER_DEFAULTS[toolCall.function.name] || {};
-
-      // Apply defaults for any missing/null parameters
-      Object.entries(properties).forEach(([key, propSchema]: [string, any]) => {
-        if (toolArgs[key] === undefined || toolArgs[key] === null) {
-          // First check configured defaults, then schema defaults
-          const defaultValue = configuredDefaults[key] ?? propSchema.default;
-          if (defaultValue !== undefined) {
-            console.log(`⚠️  Parameter "${key}" missing, using default: ${defaultValue}`);
-            toolArgs[key] = defaultValue;
-          }
-        }
-      });
-    }
-
-    console.log(`📦 Arguments (final):`, toolArgs);
+    const toolArgs = toolCall.function.arguments as Record<string, unknown>;
 
     // Step 5: Check cache before calling MCP
     let toolResult = toolResponseCache.get(toolCall.function.name, toolArgs);
