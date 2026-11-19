@@ -24,6 +24,10 @@ export const TOOL_CACHE_CONFIG: Record<string, CacheConfig> = {
     ttl: null,
     cacheable: false, // Dynamic - user's commits change frequently
   },
+  compare_builds: {
+    ttl: 6 * 60 * 60 * 1000, // 6 hours - comparison is static for same commits
+    cacheable: true,
+  },
   // Add future tools here with their cache settings
   // example_tool: { ttl: 1 * 60 * 60 * 1000, cacheable: true }
 };

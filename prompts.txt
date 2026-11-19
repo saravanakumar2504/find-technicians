@@ -1,5 +1,7 @@
-
-
+1.list_builds
+Show me all builds 
+2.get_bundle_summary
+Give me buildid details 46d07bf02a673143d4dcd84f5bb30463115db304
 3. compare_builds
 Can you compare two builds 
 
