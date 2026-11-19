@@ -3,6 +3,7 @@
 import { useState } from "react";
 import BuildsList from "./BuildsList";
 import BundleSummary from "./BundleSummary";
+import ComparisonResult from "../compare/ComparisonResult";
 
 /**
  * Helper component to render the list_builds result
@@ -85,6 +86,7 @@ export default function TestMCPPage() {
     "List the latest builds",
     "Get bundle summary for commit 46d07bf in find-technicians",
     "Show bundle analysis for latest build",
+    "Compare builds 46d07bf vs 5ec68fa for find-technicians",
   ];
 
   return (
@@ -285,6 +287,47 @@ export default function TestMCPPage() {
                       }
                     } catch (error) {
                       console.error("Error parsing bundle summary:", error);
+                    }
+                    return (
+                      <pre
+                        style={{
+                          background: "white",
+                          padding: "0.75rem",
+                          borderRadius: "4px",
+                          overflow: "auto",
+                          fontSize: "0.9rem",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        {JSON.stringify(response.toolCalled.result, null, 2)}
+                      </pre>
+                    );
+                  })()}
+                </div>
+              ) : response.toolCalled.name === "compare_builds" ? (
+                /* Special handling for compare_builds - show comparison UI */
+                <div
+                  style={{
+                    background: "#f0fdf4",
+                    padding: "1.5rem",
+                    borderRadius: "8px",
+                    border: "1px solid #22c55e",
+                    height: "100%",
+                    overflow: "auto",
+                  }}
+                >
+                  <h3 style={{ margin: "0 0 1.5rem 0", color: "#15803d" }}>
+                    🔄 Bundle Comparison
+                  </h3>
+                  {(() => {
+                    try {
+                      const content = response.toolCalled.result?.content?.[0];
+                      if (content?.type === "text" && content.text) {
+                        const comparison = JSON.parse(content.text);
+                        return <ComparisonResult data={comparison} />;
+                      }
+                    } catch (error) {
+                      console.error("Error parsing comparison result:", error);
                     }
                     return (
                       <pre
