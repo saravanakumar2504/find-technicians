@@ -6,6 +6,18 @@ import BundleSummary from "./BundleSummary";
 import ComparisonResult from "../compare/ComparisonResult";
 
 /**
+ * Streaming progress state
+ */
+type StreamingProgress = {
+  availableTools?: string[];
+  filteredTools?: string[];
+  ollamaThinking?: boolean;
+  toolSelected?: { name: string; arguments: Record<string, unknown> };
+  toolExecuting?: { name: string; fromCache: boolean };
+  toolResult?: { name: string; result: any; fromCache: boolean };
+};
+
+/**
  * Helper component to render the list_builds result
  */
 function BuildsListRenderer({ result }: { result: any }) {
@@ -47,6 +59,7 @@ export default function TestMCPPage() {
   const [response, setResponse] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<StreamingProgress>({});
 
   const repository = "find-technicians";
   const branch = "main";
@@ -57,6 +70,7 @@ export default function TestMCPPage() {
     setLoading(true);
     setError(null);
     setResponse(null);
+    setProgress({});
 
     try {
       const res = await fetch("/api/mcp-query", {
@@ -67,16 +81,87 @@ export default function TestMCPPage() {
         body: JSON.stringify({ query }),
       });
 
-      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
 
-      if (result.success) {
-        setResponse(result.data);
-      } else {
-        setError(result.error);
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const eventData = JSON.parse(line.slice(6));
+
+            // Update progress based on event type
+            switch (eventData.type) {
+              case 'available_tools':
+                setProgress(prev => ({ ...prev, availableTools: eventData.data.tools }));
+                break;
+
+              case 'filtered_tools':
+                setProgress(prev => ({ ...prev, filteredTools: eventData.data.tools }));
+                break;
+
+              case 'ollama_thinking':
+                setProgress(prev => ({ ...prev, ollamaThinking: true }));
+                break;
+
+              case 'tool_selected':
+                setProgress(prev => ({
+                  ...prev,
+                  ollamaThinking: false,
+                  toolSelected: { name: eventData.data.toolName, arguments: eventData.data.arguments }
+                }));
+                break;
+
+              case 'tool_executing':
+                setProgress(prev => ({
+                  ...prev,
+                  toolExecuting: { name: eventData.data.toolName, fromCache: eventData.data.fromCache }
+                }));
+                break;
+
+              case 'tool_result':
+                setProgress(prev => ({
+                  ...prev,
+                  toolResult: {
+                    name: eventData.data.toolName,
+                    result: eventData.data.result,
+                    fromCache: eventData.data.fromCache
+                  }
+                }));
+                break;
+
+              case 'complete':
+                setResponse(eventData.data);
+                setLoading(false);
+                break;
+
+              case 'error':
+                setError(eventData.data.error);
+                setLoading(false);
+                break;
+            }
+          }
+        }
       }
     } catch (err: any) {
       setError(err.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -156,7 +241,7 @@ export default function TestMCPPage() {
         </div>
 
         {/* Example Queries */}
-        {!response && (
+        {!response && !loading && (
           <div style={{ marginTop: "1rem", padding: "1rem", background: "white", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
             <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#475569", marginBottom: "0.75rem" }}>
               💡 Try these examples:
@@ -188,6 +273,221 @@ export default function TestMCPPage() {
                   {example}
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Streaming Progress Display */}
+        {loading && (
+          <div style={{ marginTop: "1.5rem", padding: "1.5rem", background: "white", borderRadius: "8px", border: "2px solid #3b82f6" }}>
+            <h3 style={{ margin: "0 0 1rem 0", color: "#1e40af", fontSize: "1.1rem" }}>
+              🔄 Processing Your Query...
+            </h3>
+
+            {/* Horizontal Progress Steps */}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.5rem" }}>
+              {/* Step 1: Available Tools */}
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                minWidth: "120px",
+                padding: "0.75rem",
+                background: progress.availableTools ? "#ecfdf5" : "#f8fafc",
+                borderRadius: "8px",
+                border: progress.availableTools ? "2px solid #10b981" : "2px solid #e2e8f0",
+              }}>
+                <span style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>
+                  {progress.availableTools ? "✅" : "⏳"}
+                </span>
+                <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "#334155", textAlign: "center" }}>
+                  Available Tools
+                </div>
+                {progress.availableTools && (
+                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem" }}>
+                    {progress.availableTools.length} tools
+                  </div>
+                )}
+              </div>
+
+              {/* Arrow */}
+              <div style={{ fontSize: "1.5rem", color: "#cbd5e1" }}>→</div>
+
+              {/* Step 2: Filtered Tools */}
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                minWidth: "120px",
+                padding: "0.75rem",
+                background: progress.filteredTools ? "#ecfdf5" : "#f8fafc",
+                borderRadius: "8px",
+                border: progress.filteredTools ? "2px solid #10b981" : "2px solid #e2e8f0",
+              }}>
+                <span style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>
+                  {progress.filteredTools ? "✅" : progress.availableTools ? "⏳" : "⚪"}
+                </span>
+                <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "#334155", textAlign: "center" }}>
+                  Filtered Tools
+                </div>
+                {progress.filteredTools && (
+                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem" }}>
+                    {progress.filteredTools.length} matched
+                  </div>
+                )}
+              </div>
+
+              {/* Arrow */}
+              <div style={{ fontSize: "1.5rem", color: "#cbd5e1" }}>→</div>
+
+              {/* Step 3: LLM Selection */}
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                minWidth: "120px",
+                padding: "0.75rem",
+                background: progress.toolSelected ? "#ecfdf5" : progress.ollamaThinking ? "#fef3c7" : "#f8fafc",
+                borderRadius: "8px",
+                border: progress.toolSelected ? "2px solid #10b981" : progress.ollamaThinking ? "2px solid #f59e0b" : "2px solid #e2e8f0",
+              }}>
+                <span style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>
+                  {progress.toolSelected ? "✅" : progress.ollamaThinking ? "🤔" : "⚪"}
+                </span>
+                <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "#334155", textAlign: "center" }}>
+                  LLM Selection
+                </div>
+                {progress.toolSelected && (
+                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem" }}>
+                    {progress.toolSelected.name}
+                  </div>
+                )}
+              </div>
+
+              {/* Arrow */}
+              <div style={{ fontSize: "1.5rem", color: "#cbd5e1" }}>→</div>
+
+              {/* Step 4: Cache Check */}
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                minWidth: "120px",
+                padding: "0.75rem",
+                background: progress.toolExecuting
+                  ? (progress.toolExecuting.fromCache ? "#fef3c7" : "#ecfdf5")
+                  : progress.toolSelected
+                    ? "#dbeafe"
+                    : "#f8fafc",
+                borderRadius: "8px",
+                border: progress.toolExecuting
+                  ? (progress.toolExecuting.fromCache ? "2px solid #f59e0b" : "2px solid #10b981")
+                  : progress.toolSelected
+                    ? "2px solid #3b82f6"
+                    : "2px solid #e2e8f0",
+              }}>
+                <span style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>
+                  {progress.toolExecuting
+                    ? (progress.toolExecuting.fromCache ? "⚡" : "🔍")
+                    : progress.toolSelected
+                      ? "⏳"
+                      : "⚪"}
+                </span>
+                <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "#334155", textAlign: "center" }}>
+                  Cache Check
+                </div>
+                {progress.toolExecuting && (
+                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem", fontWeight: "600" }}>
+                    {progress.toolExecuting.fromCache ? "⚡ HIT" : "MISS"}
+                  </div>
+                )}
+              </div>
+
+              {/* Arrow */}
+              <div style={{ fontSize: "1.5rem", color: "#cbd5e1" }}>→</div>
+
+              {/* Step 5: Tool Execution */}
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                minWidth: "120px",
+                padding: "0.75rem",
+                background: progress.toolResult
+                  ? (progress.toolResult.fromCache ? "#fef3c7" : "#ecfdf5")
+                  : progress.toolExecuting && !progress.toolExecuting.fromCache
+                    ? "#dbeafe"
+                    : "#f8fafc",
+                borderRadius: "8px",
+                border: progress.toolResult
+                  ? (progress.toolResult.fromCache ? "2px solid #f59e0b" : "2px solid #10b981")
+                  : progress.toolExecuting && !progress.toolExecuting.fromCache
+                    ? "2px solid #3b82f6"
+                    : "2px solid #e2e8f0",
+              }}>
+                <span style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>
+                  {progress.toolResult
+                    ? "✅"
+                    : progress.toolExecuting && !progress.toolExecuting.fromCache
+                      ? "⚙️"
+                      : progress.toolExecuting && progress.toolExecuting.fromCache
+                        ? "⚡"
+                        : "⚪"}
+                </span>
+                <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "#334155", textAlign: "center" }}>
+                  Execution
+                </div>
+                {progress.toolExecuting && !progress.toolExecuting.fromCache && (
+                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem" }}>
+                    Running...
+                  </div>
+                )}
+                {progress.toolExecuting && progress.toolExecuting.fromCache && (
+                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem" }}>
+                    Skipped
+                  </div>
+                )}
+                {progress.toolResult && (
+                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem" }}>
+                    {progress.toolResult.fromCache ? "⚡ Instant" : "✓ Complete"}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Details below */}
+            <div style={{ marginTop: "1rem", padding: "0.75rem", background: "#f8fafc", borderRadius: "6px", fontSize: "0.875rem" }}>
+              {progress.availableTools && (
+                <div style={{ marginBottom: "0.5rem" }}>
+                  <strong>Available:</strong> {progress.availableTools.join(", ")}
+                </div>
+              )}
+              {progress.filteredTools && (
+                <div style={{ marginBottom: "0.5rem" }}>
+                  <strong>Filtered:</strong> {progress.filteredTools.join(", ")}
+                </div>
+              )}
+              {progress.toolSelected && (
+                <div style={{ marginBottom: "0.5rem" }}>
+                  <strong>Selected Tool:</strong> <code style={{ background: "white", padding: "0.125rem 0.4rem", borderRadius: "3px" }}>
+                    {progress.toolSelected.name}
+                  </code>
+                </div>
+              )}
+              {progress.toolExecuting && (
+                <div style={{
+                  padding: "0.5rem",
+                  background: progress.toolExecuting.fromCache ? "#fef3c7" : "#ecfdf5",
+                  borderRadius: "4px",
+                  border: progress.toolExecuting.fromCache ? "1px solid #f59e0b" : "1px solid #10b981",
+                }}>
+                  <strong>Cache Status:</strong> {progress.toolExecuting.fromCache ? (
+                    <span style={{ color: "#f59e0b", fontWeight: "700" }}>⚡ HIT - Retrieved from cache (instant response)</span>
+                  ) : (
+                    <span style={{ color: "#10b981", fontWeight: "700" }}>MISS - Executing fresh tool call</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

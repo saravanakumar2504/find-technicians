@@ -6,6 +6,7 @@
 export { listBuilds } from "./list-builds";
 export { listAvailableTools } from "./list-tools";
 export { executeTool } from "./execute-tool";
+export { filterToolsByQuery } from "./filter-tools";
 
 // Future tools will be exported here:
 // export { getBundleSummary } from "./get-bundle-summary";
