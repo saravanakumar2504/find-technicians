@@ -28,6 +28,10 @@ export const TOOL_CACHE_CONFIG: Record<string, CacheConfig> = {
     ttl: 6 * 60 * 60 * 1000, // 6 hours - comparison is static for same commits
     cacheable: true,
   },
+  get_dependency_breakdown: {
+    ttl: 6 * 60 * 60 * 1000, // 6 hours - dependency breakdown is static for same buildId
+    cacheable: true,
+  },
   // Add future tools here with their cache settings
   // example_tool: { ttl: 1 * 60 * 60 * 1000, cacheable: true }
 };

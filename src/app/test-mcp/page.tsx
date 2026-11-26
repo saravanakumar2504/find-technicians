@@ -4,6 +4,7 @@ import { useState } from "react";
 import BuildsList from "./BuildsList";
 import BundleSummary from "./BundleSummary";
 import ComparisonResult from "../compare/ComparisonResult";
+import DependencyBreakdown from "./DependencyBreakdown";
 
 /**
  * Streaming progress state
@@ -172,6 +173,8 @@ export default function TestMCPPage() {
     "Get bundle summary for commit 46d07bf in find-technicians",
     "Show bundle analysis for latest build",
     "Compare builds 46d07bf vs 5ec68fa for find-technicians",
+    "Get dependency breakdown for commit 722b2ae in find-technicians",
+    "Show me which packages are in the shared bundle for 722b2ae",
   ];
 
   return (
@@ -628,6 +631,47 @@ export default function TestMCPPage() {
                       }
                     } catch (error) {
                       console.error("Error parsing comparison result:", error);
+                    }
+                    return (
+                      <pre
+                        style={{
+                          background: "white",
+                          padding: "0.75rem",
+                          borderRadius: "4px",
+                          overflow: "auto",
+                          fontSize: "0.9rem",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        {JSON.stringify(response.toolCalled.result, null, 2)}
+                      </pre>
+                    );
+                  })()}
+                </div>
+              ) : response.toolCalled.name === "get_dependency_breakdown" ? (
+                /* Special handling for get_dependency_breakdown - show dependency UI */
+                <div
+                  style={{
+                    background: "#fef9f3",
+                    padding: "1.5rem",
+                    borderRadius: "8px",
+                    border: "1px solid #fb923c",
+                    height: "100%",
+                    overflow: "auto",
+                  }}
+                >
+                  <h3 style={{ margin: "0 0 1.5rem 0", color: "#c2410c" }}>
+                    📊 Dependency Breakdown
+                  </h3>
+                  {(() => {
+                    try {
+                      const content = response.toolCalled.result?.content?.[0];
+                      if (content?.type === "text" && content.text) {
+                        const breakdown = JSON.parse(content.text);
+                        return <DependencyBreakdown data={breakdown} />;
+                      }
+                    } catch (error) {
+                      console.error("Error parsing dependency breakdown:", error);
                     }
                     return (
                       <pre

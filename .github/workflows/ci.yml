@@ -20,9 +20,7 @@ jobs:
         run: npm ci
 
       - name: Build with bundle analysis
-        run: ANALYZE=true npm run build > build-output.txt 2>&1
-        env:
-          NEXT_PUBLIC_ANALYZE: true
+        run: npm run build:analyze > build-output.txt 2>&1
 
       - name: Extract route sizes from build output
         run: node scripts/extract-bundle-stats.js
