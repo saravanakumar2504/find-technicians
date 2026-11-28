@@ -170,14 +170,10 @@ export default function TestMCPPage() {
 
   const exampleQueries = [
     "Show me all builds for find-technicians",
-    "List the latest builds",
-    "Get bundle summary for commit 46d07bf in find-technicians",
-    "Show bundle analysis for latest build",
-    "What files are loaded on the / route for commit c2a7ecb in find-technicians?",
-    "Show me route assets for /test-mcp page in latest build",
-    "Compare builds 46d07bf vs 5ec68fa for find-technicians",
-    "Get dependency breakdown for commit 722b2ae in find-technicians",
-    "Show me which packages are in the shared bundle for 722b2ae",
+    "Get bundle summary for commit c2a7ecb in find-technicians",
+    "Compare builds c2a7ecb vs 79af65b for find-technicians",
+    "Get dependency breakdown for commit c2a7ecb in find-technicians",
+    "What files are loaded on the /test-mcp route for commit c2a7ecb in find-technicians?",
   ];
 
   return (
@@ -250,35 +246,51 @@ export default function TestMCPPage() {
         {!response && !loading && (
           <div style={{ marginTop: "1rem", padding: "1rem", background: "white", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
             <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#475569", marginBottom: "0.75rem" }}>
-              💡 Try these examples:
+              💡 Try these examples (one per tool):
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-              {exampleQueries.map((example) => (
-                <button
-                  key={example}
-                  onClick={() => setQuery(example)}
-                  style={{
-                    padding: "0.5rem 0.75rem",
-                    background: "#f1f5f9",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontSize: "0.875rem",
-                    color: "#334155",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#e2e8f0";
-                    e.currentTarget.style.borderColor = "#94a3b8";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "#f1f5f9";
-                    e.currentTarget.style.borderColor = "#cbd5e1";
-                  }}
-                >
-                  {example}
-                </button>
-              ))}
+              {exampleQueries.map((example, index) => {
+                const labels = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"];
+                const toolNames = [
+                  "List Builds",
+                  "Bundle Summary",
+                  "Compare Builds",
+                  "Dependency Breakdown",
+                  "Route Assets"
+                ];
+                return (
+                  <button
+                    key={example}
+                    onClick={() => setQuery(example)}
+                    style={{
+                      padding: "0.5rem 0.75rem",
+                      background: "#f1f5f9",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "0.875rem",
+                      color: "#334155",
+                      transition: "all 0.2s",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#e2e8f0";
+                      e.currentTarget.style.borderColor = "#94a3b8";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#f1f5f9";
+                      e.currentTarget.style.borderColor = "#cbd5e1";
+                    }}
+                    title={`${toolNames[index]} - ${example}`}
+                  >
+                    <span style={{ fontWeight: "600", color: "#64748b", marginRight: "0.5rem" }}>
+                      {labels[index]}
+                    </span>
+                    <span>{example}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

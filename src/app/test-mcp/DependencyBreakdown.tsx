@@ -143,6 +143,8 @@ function OverallBreakdownCard({ totalSize, packageCount, breakdown, note }: {
   breakdown: any[];
   note?: string;
 }) {
+  const [clientOnly, setClientOnly] = useState(false);
+
   const getPackageColor = (packageName: string) => {
     if (packageName === "app-code") return { bg: "#dbeafe", border: "#3b82f6", text: "#1e40af" };
     if (packageName === "other") return { bg: "#f1f5f9", border: "#94a3b8", text: "#475569" };
@@ -151,6 +153,76 @@ function OverallBreakdownCard({ totalSize, packageCount, breakdown, note }: {
     if (packageName.startsWith("@")) return { bg: "#fef3c7", border: "#f59e0b", text: "#92400e" };
     return { bg: "#f0fdf4", border: "#22c55e", text: "#15803d" };
   };
+
+  // Filter modules to client-side only
+  const filterClientSide = (pkg: any) => {
+    if (!clientOnly) return pkg;
+
+    // Filter out server-side modules from the "other" category
+    const clientModules = (pkg.modules || []).filter((mod: any) => {
+      const path = mod.path.toLowerCase();
+
+      // Exclude server-side patterns
+      if (path.includes('/server/') || path.includes('\\server\\')) return false;
+      if (path.includes('/nodejs/') || path.includes('\\nodejs\\')) return false;
+      if (path.includes('node_modules') && !path.includes('/dist/')) return false; // Raw node_modules (not bundled)
+      if (path.includes('webpack/runtime') && path.includes('node')) return false;
+      if (path.includes('.server.')) return false;
+      if (path.includes('react-server')) return false;
+      if (path.includes('flight-server')) return false;
+
+      // Include client-side patterns
+      if (path.includes('/client/') || path.includes('\\client\\')) return true;
+      if (path.includes('/browser/') || path.includes('\\browser\\')) return true;
+      if (path.includes('.client.')) return true;
+      if (path.includes('react-dom') && !path.includes('server')) return true;
+
+      // For "other" category, be more selective
+      if (pkg.package === "other") {
+        // Only include if it looks like client code
+        if (path.includes('/app/') || path.includes('\\app\\')) return true;
+        if (path.includes('/src/') || path.includes('\\src\\')) return true;
+        if (path.includes('/components/') || path.includes('\\components\\')) return true;
+        if (path.includes('webpack/runtime') && !path.includes('node')) return true;
+        return false; // Exclude other "other" modules
+      }
+
+      // Include everything else (actual packages)
+      return true;
+    });
+
+    // Recalculate size
+    const newSizeBytes = clientModules.reduce((sum: number, mod: any) => sum + (mod.sizeBytes || 0), 0);
+
+    if (newSizeBytes === 0 && clientModules.length === 0) return null; // Skip if no client modules
+
+    return {
+      ...pkg,
+      modules: clientModules,
+      sizeBytes: newSizeBytes,
+      size: formatBytes(newSizeBytes),
+      moduleCount: clientModules.length,
+    };
+  };
+
+  // Filter and recalculate
+  const filteredBreakdown = clientOnly
+    ? breakdown.map(filterClientSide).filter(Boolean)
+    : breakdown;
+
+  const filteredTotalBytes = clientOnly
+    ? filteredBreakdown.reduce((sum: number, pkg: any) => sum + (pkg.sizeBytes || 0), 0)
+    : parseSizeToBytes(totalSize);
+
+  const filteredTotalSize = clientOnly ? formatBytes(filteredTotalBytes) : totalSize;
+
+  // Recalculate percentages
+  const breakdownWithPercentages = filteredBreakdown.map((pkg: any) => ({
+    ...pkg,
+    percentage: filteredTotalBytes > 0
+      ? ((pkg.sizeBytes / filteredTotalBytes) * 100).toFixed(1)
+      : "0.0"
+  }));
 
   return (
     <div>
@@ -162,34 +234,68 @@ function OverallBreakdownCard({ totalSize, packageCount, breakdown, note }: {
           padding: "1.25rem 1.5rem",
           marginBottom: "1.5rem",
           color: "white",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "1rem",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div style={{ fontSize: "2rem" }}>📦</div>
-          <div>
-            <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: "700" }}>
-              Bundle Dependency Breakdown
-            </h3>
-            <div style={{ fontSize: "0.85rem", opacity: 0.9, marginTop: "0.25rem" }}>
-              {packageCount} {packageCount === 1 ? "package" : "packages"} detected
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div style={{ fontSize: "2rem" }}>📦</div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: "700" }}>
+                Bundle Dependency Breakdown
+              </h3>
+              <div style={{ fontSize: "0.85rem", opacity: 0.9, marginTop: "0.25rem" }}>
+                {breakdownWithPercentages.length} {breakdownWithPercentages.length === 1 ? "package" : "packages"} {clientOnly ? "(client-side)" : "(all)"}
+              </div>
             </div>
+          </div>
+
+          <div style={{ fontSize: "2rem", fontWeight: "700" }}>
+            {filteredTotalSize}
           </div>
         </div>
 
-        <div style={{ fontSize: "2rem", fontWeight: "700" }}>
-          {totalSize}
+        {/* Toggle Button */}
+        <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.2)" }}>
+          <button
+            onClick={() => setClientOnly(!clientOnly)}
+            style={{
+              background: clientOnly ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)",
+              border: "2px solid white",
+              color: "white",
+              padding: "0.5rem 1rem",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+              fontWeight: "600",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = clientOnly ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)";
+            }}
+          >
+            <span style={{ fontSize: "1.2rem" }}>{clientOnly ? "🌐" : "📊"}</span>
+            <span>
+              {clientOnly ? "Client-Side Only (Browser Downloads)" : "All Modules (Server + Client)"}
+            </span>
+          </button>
+          <div style={{ fontSize: "0.75rem", opacity: 0.85, marginTop: "0.5rem" }}>
+            {clientOnly
+              ? "✅ Showing only files that download to the browser (affects page load speed)"
+              : "ℹ️ Showing all modules (includes server-side code that doesn't download)"
+            }
+          </div>
         </div>
 
         {note && (
           <div style={{
             fontSize: "0.75rem",
             opacity: 0.85,
-            flex: "1 1 100%",
             marginTop: "0.5rem",
             paddingTop: "1rem",
             borderTop: "1px solid rgba(255,255,255,0.2)"
@@ -207,12 +313,38 @@ function OverallBreakdownCard({ totalSize, packageCount, breakdown, note }: {
           gap: "1rem",
         }}
       >
-        {breakdown.map((pkg: any, index: number) => {
+        {breakdownWithPercentages.map((pkg: any, index: number) => {
           return <PackageCard key={pkg.package} pkg={pkg} index={index} getPackageColor={getPackageColor} />;
         })}
       </div>
     </div>
   );
+}
+
+// Helper functions
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const units = ["B", "kB", "MB", "GB"];
+  let size = bytes;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+  const rounded = Math.round(size * 10) / 10;
+  return `${rounded} ${units[unitIndex]}`;
+}
+
+function parseSizeToBytes(sizeStr: string): number {
+  const match = sizeStr.match(/(\d+\.?\d*)\s*(\w+)/);
+  if (!match) return 0;
+  const value = parseFloat(match[1]);
+  const unit = match[2];
+  if (unit === "B") return value;
+  if (unit === "kB" || unit === "KB") return value * 1024;
+  if (unit === "MB") return value * 1024 * 1024;
+  if (unit === "GB") return value * 1024 * 1024 * 1024;
+  return value;
 }
 
 /**
