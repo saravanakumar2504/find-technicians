@@ -36,4 +36,8 @@ jobs:
           path: |
             bundle-stats.json
             .next/analyze/
+            .next/build-manifest.json
+            .next/app-build-manifest.json
+            .next/static/chunks/
+            .next/static/css/
           retention-days: 7

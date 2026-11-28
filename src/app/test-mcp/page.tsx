@@ -5,6 +5,7 @@ import BuildsList from "./BuildsList";
 import BundleSummary from "./BundleSummary";
 import ComparisonResult from "../compare/ComparisonResult";
 import DependencyBreakdown from "./DependencyBreakdown";
+import RouteAssets from "./RouteAssets";
 
 /**
  * Streaming progress state
@@ -172,6 +173,8 @@ export default function TestMCPPage() {
     "List the latest builds",
     "Get bundle summary for commit 46d07bf in find-technicians",
     "Show bundle analysis for latest build",
+    "What files are loaded on the / route for commit c2a7ecb in find-technicians?",
+    "Show me route assets for /test-mcp page in latest build",
     "Compare builds 46d07bf vs 5ec68fa for find-technicians",
     "Get dependency breakdown for commit 722b2ae in find-technicians",
     "Show me which packages are in the shared bundle for 722b2ae",
@@ -672,6 +675,47 @@ export default function TestMCPPage() {
                       }
                     } catch (error) {
                       console.error("Error parsing dependency breakdown:", error);
+                    }
+                    return (
+                      <pre
+                        style={{
+                          background: "white",
+                          padding: "0.75rem",
+                          borderRadius: "4px",
+                          overflow: "auto",
+                          fontSize: "0.9rem",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        {JSON.stringify(response.toolCalled.result, null, 2)}
+                      </pre>
+                    );
+                  })()}
+                </div>
+              ) : response.toolCalled.name === "get_route_assets" ? (
+                /* Special handling for get_route_assets - show route assets UI */
+                <div
+                  style={{
+                    background: "#faf5ff",
+                    padding: "1.5rem",
+                    borderRadius: "8px",
+                    border: "1px solid #a855f7",
+                    height: "100%",
+                    overflow: "auto",
+                  }}
+                >
+                  <h3 style={{ margin: "0 0 1.5rem 0", color: "#7e22ce" }}>
+                    📦 Route Assets
+                  </h3>
+                  {(() => {
+                    try {
+                      const content = response.toolCalled.result?.content?.[0];
+                      if (content?.type === "text" && content.text) {
+                        const routeAssets = JSON.parse(content.text);
+                        return <RouteAssets data={routeAssets} />;
+                      }
+                    } catch (error) {
+                      console.error("Error parsing route assets:", error);
                     }
                     return (
                       <pre
